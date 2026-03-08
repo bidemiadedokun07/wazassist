@@ -1,0 +1,29 @@
+
+> wazassist-ai@1.0.0 dev
+> nodemon backend/src/index.js
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node backend/src/index.js`[39m
+23:04:09 [[32minfo[39m]: 🚀 WazAssist AI Server started on port 3000 {"service":"wazassist-backend"}
+23:04:09 [[32minfo[39m]: 📊 Environment: development {"service":"wazassist-backend"}
+23:04:09 [[32minfo[39m]: 🌍 Region: us-east-1 {"service":"wazassist-backend"}
+23:04:09 [[32minfo[39m]: 🤖 AI Model: 8B {"service":"wazassist-backend"}
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: read EIO
+    at TTY.onStreamRead (node:internal/stream_base_commons:216:20)
+Emitted 'error' event on ReadStream instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -5,
+  code: 'EIO',
+  syscall: 'read'
+}
+
+Node.js v22.20.0
