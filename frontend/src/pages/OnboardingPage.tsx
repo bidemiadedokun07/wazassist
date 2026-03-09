@@ -39,7 +39,7 @@ export default function OnboardingPage() {
     description: '',
     category: '',
     price: '',
-    stock: '0',
+    stock: '',
     imageUrl: '',
   })
 
@@ -145,7 +145,7 @@ export default function OnboardingPage() {
         description: productForm.description || undefined,
         category: productForm.category || undefined,
         price: parsedPrice,
-        stock: Number.isFinite(parsedStock) ? parsedStock : 0,
+        stock: Number.isFinite(parsedStock) ? Math.max(parsedStock, 0) : 0,
         imageUrl: productForm.imageUrl || undefined,
       })
 
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
         description: '',
         category: productForm.category,
         price: '',
-        stock: '0',
+        stock: '',
         imageUrl: '',
       })
     } catch (error: any) {

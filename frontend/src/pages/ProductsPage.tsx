@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Edit, Trash2, Package, AlertCircle, X } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Package, AlertCircle, X, Upload } from 'lucide-react'
 import { useBusiness } from '../hooks/useBusiness'
 import { productService, Product, CreateProductData } from '../services/product'
+import { api } from '../services/api'
 
 export default function ProductsPage() {
   const { currentBusiness } = useBusiness()
@@ -232,18 +233,19 @@ interface ProductModalProps {
 
 function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProps) {
   const queryClient = useQueryClient()
-  const [formData, setFormData] = useState<CreateProductData>({
+  const [formData, setFormData] = useState({
     name: product?.name || '',
     description: product?.description || '',
-    price: product?.price || 0,
+    price: product ? String(product.price) : '',
     currency: product?.currency || 'NGN',
     sku: product?.sku || '',
     category: product?.category || '',
-    stock: product?.stock || 0,
-    lowStockThreshold: product?.lowStockThreshold || 10,
+    stock: product ? String(product.stock) : '',
+    lowStockThreshold: product ? String(product.lowStockThreshold) : '',
     imageUrl: product?.imageUrl || '',
   })
   const [error, setError] = useState('')
+  const [uploadLoading, setUploadLoading] = useState(false)
 
   const mutation = useMutation({
     mutationFn: (data: CreateProductData) =>
@@ -263,12 +265,60 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
     e.preventDefault()
     setError('')
 
-    if (!formData.name || formData.price <= 0) {
-      setError('Please fill in all required fields')
+    const parsedPrice = Number(formData.price)
+    const parsedStock = Number(formData.stock || '0')
+    const parsedLowStock = Number(formData.lowStockThreshold || '0')
+
+    if (!formData.name.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      setError('Please enter a valid product name and price')
       return
     }
 
-    mutation.mutate(formData)
+    const payload: CreateProductData = {
+      name: formData.name,
+      description: formData.description || undefined,
+      price: parsedPrice,
+      currency: formData.currency,
+      sku: formData.sku || undefined,
+      category: formData.category || undefined,
+      stock: Number.isFinite(parsedStock) ? Math.max(parsedStock, 0) : 0,
+      lowStockThreshold: Number.isFinite(parsedLowStock) ? Math.max(parsedLowStock, 0) : 0,
+      imageUrl: formData.imageUrl || undefined,
+    }
+
+    mutation.mutate(payload)
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setError('')
+    setUploadLoading(true)
+
+    try {
+      const uploadData = new FormData()
+      uploadData.append('file', file)
+      uploadData.append('folder', 'products')
+
+      const response = await api.post('/uploads/single', uploadData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const imageUrl = response.data?.data?.fileUrl
+      if (!imageUrl) {
+        throw new Error('Upload did not return file URL')
+      }
+
+      setFormData({ ...formData, imageUrl })
+    } catch (uploadError: any) {
+      setError(uploadError.response?.data?.error || 'Image upload failed. You can still paste an image URL.')
+    } finally {
+      setUploadLoading(false)
+      event.target.value = ''
+    }
   }
 
   if (!isOpen) return null
@@ -304,7 +354,8 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="e.g. Premium Ankara Gown"
                 required
               />
             </div>
@@ -315,7 +366,8 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="Short product description"
               />
             </div>
 
@@ -324,10 +376,11 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
               <input
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 min="0"
                 step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="e.g. 5000"
                 required
               />
             </div>
@@ -350,7 +403,8 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
                 type="text"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="Optional"
               />
             </div>
 
@@ -360,7 +414,8 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
                 type="text"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="e.g. Clothing"
               />
             </div>
 
@@ -369,9 +424,10 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
               <input
                 type="number"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="e.g. 20"
               />
             </div>
 
@@ -383,21 +439,33 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
                 type="number"
                 value={formData.lowStockThreshold}
                 onChange={(e) =>
-                  setFormData({ ...formData, lowStockThreshold: Number(e.target.value) })
+                  setFormData({ ...formData, lowStockThreshold: e.target.value })
                 }
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                placeholder="e.g. 5"
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+              <label className="inline-flex items-center gap-2 px-3 py-2 mb-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer text-sm font-medium">
+                <Upload className="w-4 h-4" />
+                {uploadLoading ? 'Uploading...' : 'Upload from computer'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadLoading}
+                />
+              </label>
               <input
                 type="url"
                 value={formData.imageUrl}
                 onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                 placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -412,7 +480,7 @@ function ProductModal({ isOpen, onClose, businessId, product }: ProductModalProp
             </button>
             <button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || uploadLoading}
               className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50"
             >
               {mutation.isPending ? 'Saving...' : product ? 'Update Product' : 'Add Product'}
