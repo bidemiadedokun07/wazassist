@@ -94,6 +94,7 @@ export async function register(userData) {
 export async function login(credentials) {
   try {
     const { phoneNumber, password } = credentials;
+    const invalidCredentialsError = 'Invalid phone number or password';
 
     // Get user with password hash
     const result = await query(
@@ -103,21 +104,31 @@ export async function login(credentials) {
     );
 
     if (result.rows.length === 0) {
-      throw new Error('Invalid phone number or password');
+      throw new Error(invalidCredentialsError);
     }
 
     const user = result.rows[0];
 
     // Check if user is active
     if (!user.is_active) {
-      throw new Error('Account is deactivated. Please contact support.');
+      throw new Error(invalidCredentialsError);
     }
 
     // Verify password
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    let passwordMatch = false;
+    try {
+      passwordMatch = await bcrypt.compare(password, user.password_hash);
+    } catch (error) {
+      logger.warn('⚠️ Password compare failed during login', {
+        userId: user.id,
+        phoneNumber,
+        error: error.message
+      });
+      throw new Error(invalidCredentialsError);
+    }
 
     if (!passwordMatch) {
-      throw new Error('Invalid phone number or password');
+      throw new Error(invalidCredentialsError);
     }
 
     // Generate tokens

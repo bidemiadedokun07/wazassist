@@ -108,6 +108,8 @@ router.post('/login', async (req, res) => {
       data: result
     });
   } catch (error) {
+    const invalidCredentialsError = 'Invalid phone number or password';
+
     logger.error('Login error', {
       error: error.message,
       phoneNumber: req.body.phoneNumber
@@ -115,7 +117,7 @@ router.post('/login', async (req, res) => {
 
     res.status(401).json({
       success: false,
-      error: error.message || 'Login failed'
+      error: invalidCredentialsError
     });
   }
 });
