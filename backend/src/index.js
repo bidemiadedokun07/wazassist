@@ -20,6 +20,10 @@ import routes from './api/routes/index.js';
 
 const app = express();
 
+if (config.env === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet());
 app.use(removeServerHeaders);
