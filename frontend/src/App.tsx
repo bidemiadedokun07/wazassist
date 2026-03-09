@@ -1,7 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { useBusiness } from './hooks/useBusiness'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import OnboardingPage from './pages/OnboardingPage'
 import DashboardPage from './pages/DashboardPage'
 import ProductsPage from './pages/ProductsPage'
 import OrdersPage from './pages/OrdersPage'
@@ -50,6 +52,45 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function BusinessReadyRoute({ children }: { children: React.ReactNode }) {
+  const { businesses, isLoading } = useBusiness()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
+  }
+
+  const hasBusiness = (businesses?.length || 0) > 0
+  if (!hasBusiness) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  return <>{children}</>
+}
+
+function OnboardingRoute({ children }: { children: React.ReactNode }) {
+  const { businesses, isLoading } = useBusiness()
+  const location = useLocation()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
+  }
+
+  const hasBusiness = (businesses?.length || 0) > 0
+  if (hasBusiness && location.pathname === '/onboarding') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -71,13 +112,25 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <OnboardingRoute>
+                <OnboardingPage />
+              </OnboardingRoute>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Routes */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Layout />
+              <BusinessReadyRoute>
+                <Layout />
+              </BusinessReadyRoute>
             </ProtectedRoute>
           }
         >

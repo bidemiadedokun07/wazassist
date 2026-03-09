@@ -22,6 +22,18 @@ export interface BusinessStats {
   activeConversations: number
 }
 
+export interface CreateBusinessData {
+  ownerId: string
+  businessName: string
+  businessType: string
+  phoneNumber: string
+  email?: string
+  description?: string
+  whatsappPhoneNumberId?: string
+  whatsappAccessToken?: string
+  settings?: Record<string, any>
+}
+
 export const businessService = {
   async getMyBusinesses(): Promise<Business[]> {
     const response = await api.get<{ success: boolean; data: Business[] }>('/businesses/my')
@@ -33,7 +45,7 @@ export const businessService = {
     return response.data.data
   },
 
-  async createBusiness(data: Partial<Business>): Promise<Business> {
+  async createBusiness(data: CreateBusinessData): Promise<any> {
     const response = await api.post<{ success: boolean; data: Business }>('/businesses', data)
     return response.data.data
   },
