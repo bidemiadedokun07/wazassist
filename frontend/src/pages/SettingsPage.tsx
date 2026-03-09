@@ -20,8 +20,6 @@ import { authService } from '../services/auth'
 import { businessService } from '../services/business'
 
 export default function SettingsPage() {
-  const { user, updateUser } = useAuth()
-  const { currentBusiness, refetchBusinesses } = useBusiness()
   const [activeTab, setActiveTab] = useState<'profile' | 'business' | 'security' | 'notifications'>(
     'business'
   )

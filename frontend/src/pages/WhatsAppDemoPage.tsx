@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, User, Bot, ShoppingCart, DollarSign, Package, Clock, Check, CheckCheck } from 'lucide-react'
-import { useBusiness } from '../hooks/useBusiness'
 
 interface Message {
   id: string
@@ -13,7 +12,6 @@ interface Message {
 }
 
 export default function WhatsAppDemoPage() {
-  const { currentBusiness } = useBusiness()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)

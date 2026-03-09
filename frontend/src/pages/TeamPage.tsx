@@ -23,7 +23,6 @@ export default function TeamPage() {
   const { currentBusiness } = useBusiness()
   const queryClient = useQueryClient()
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
 
   // Fetch team members
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
@@ -33,7 +32,7 @@ export default function TeamPage() {
   })
 
   // Fetch pending invitations
-  const { data: invitations, isLoading: loadingInvitations } = useQuery({
+  const { data: invitations } = useQuery({
     queryKey: ['team-invitations', currentBusiness?.id],
     queryFn: () => teamService.getPendingInvitations(currentBusiness!.id),
     enabled: !!currentBusiness,
@@ -63,7 +62,6 @@ export default function TeamPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team'] })
       queryClient.invalidateQueries({ queryKey: ['team-statistics'] })
-      setSelectedMember(null)
     },
   })
 
